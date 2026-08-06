@@ -1,35 +1,33 @@
-```markdown
 # Single-Cell RNA Sequencing Integration and Batch Correction in Hepatoblastoma (GSE180665)
 
-## Table of Contents
-- [Study Overview](#study-overview)
-- [Dataset Information](#dataset-information)
-- [Workflow Architecture](#workflow-architecture)
-- [Installation & Requirements](#installation--requirements)
-- [Pipeline Breakdown](#pipeline-breakdown)
-- [Results & Visualization](#results--visualization)
-- [Key Takeaways](#key-takeaways)
+An end-to-end single-cell RNA sequencing (scRNA-Seq) data integration and batch correction pipeline implemented in R using the **Seurat v3** framework. This workflow processes single-cell transcriptomic profiles derived from primary human tumor tissue, adjacent background liver, and patient-derived xenografts (PDX) from pediatric hepatoblastoma (HB) patients (GSE180665). By leveraging Canonical Correlation Analysis (CCA), the pipeline harmonizes data across patient cohorts to correct for patient-specific batch effects while preserving true biological heterogeneity.
 
 ---
 
-## Study Overview
+## 📋 Overview of Workflow Steps
 
-Hepatoblastoma (HB) is the most common primary liver tumor in pediatric populations. Understanding intratumoral heterogeneity and distinct tumor cell populations is critical to elucidating key genetic mechanisms and cellular signaling pathways involved in HB pathogenesis.
+1. **Data Loading & Preprocessing:** Iteratively load 10x Genomics raw feature-barcode matrices (`matrix.mtx.gz`, `features.tsv.gz`, `barcodes.tsv.gz`) across sample directories using `ReadMtx()` and construct individual `SeuratObject` containers.
 
-This project focuses on the computational integration of scRNA-seq datasets derived from primary human tumor tissue, adjacent background liver, and patient-derived xenografts (PDX). Using standard batch-effect correction strategies in **Seurat v3**, this workflow aligns biological states across patient cohorts while mitigating patient-specific technical variation.
 
----
+2. **Dataset Merging & Metadata Parsing:** Merge individual sample objects into a combined dataset and parse sample identities using `tidyr::separate()` to extract `Patient`, `Type`, and `Barcode` attributes.
 
-## Dataset Information
 
-* **Accession:** GSE180665
-* **Organism:** *Homo sapiens*
-* **Sample Types:** 
-  * Primary Hepatoblastoma Tumor
-  * Adjacent Background Liver
-  * Patient-Derived Xenografts (PDX)
-* **Patients Included:** HB17, HB30, HB53
-* **Format:** 10x Genomics raw feature-barcode matrices (`matrix.mtx.gz`, `features.tsv.gz`, `barcodes.tsv.gz`)
+3. **Quality Control (QC) & Filtering:** Compute mitochondrial read percentages (`percent.mt`) using `PercentageFeatureSet()` and filter low-quality cells, empty droplets, and damaged cells based on expression thresholds (`nCount_RNA > 800`, `nFeature_RNA > 500`, and `percent.mt < 10%`).
+
+
+4. **Unintegrated Pipeline Evaluation:** Execute standard single-cell processing steps (`NormalizeData`, `FindVariableFeatures`, `ScaleData`, `RunPCA`, and `RunUMAP`) on the uncorrected data to assess patient-specific clustering masks and technical variation.
+
+
+5. **Multi-Dataset Splitting:** Split the merged object by patient ID (`SplitObject`) into individual sub-objects to prepare for dataset harmonization.
+
+
+6. **Integration Feature Selection:** Normalize individual sub-objects independently and identify shared highly variable integration features using `SelectIntegrationFeatures()`.
+
+
+7. **Anchor Identification & CCA Integration:** Compute integration anchors across patient datasets using Canonical Correlation Analysis (`FindIntegrationAnchors`) and run `IntegrateData()` to harmonize gene expression profiles across batches.
+
+
+8. **Downstream Scaling & Dimensionality Reduction:** Perform data scaling (`ScaleData`), Principal Component Analysis (`RunPCA`), and non-linear dimensionality reduction (`RunUMAP`) on the integrated assay to visualize batch-corrected cell populations.
 
 ---
 
